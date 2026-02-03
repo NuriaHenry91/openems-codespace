@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/base:ubuntu
+    command: sleep infinity
+
+  # OpenEMS Backend (Cloud)
+  openems-backend:
+    image: openems/openems-backend:latest
+    restart: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - DB_HOST=openems-db
+      - DB_PORT=5432
+      - DB_NAME=openems
+      - DB_USER=openems
+      - DB_PASS=openems
+    ports:
+      - "8080:8080"  # Web UI
+      - "8081:8081"  # REST API
+    depends_on:
+      - openems-db
+
+  # OpenEMS Edge (模拟边缘设备)
+  openems-edge:
+    image: openems/openems-edge:latest
+    restart: always
+    environment:
+      - EDGE_ID=edge001
+      - API_ENDPOINT=http://openems-backend:8081
+    ports:
+      - "8082:8082"  # Edge UI
+    depends_on:
+      - openems-backend
+
+  # PostgreSQL Database
+  openems-db:
+    image: postgres:14
+    restart: always
+    environment:
+      POSTGRES_DB: openems
+      POSTGRES_USER: openems
+      POSTGRES_PASSWORD: openems
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+volumes:
+  db_data:
